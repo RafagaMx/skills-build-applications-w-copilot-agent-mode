@@ -1,7 +1,14 @@
 import express from 'express';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import { connectDatabase } from './config/database';
+
+// Import routes
+import usersRoutes from './routes/users';
+import teamsRoutes from './routes/teams';
+import activitiesRoutes from './routes/activities';
+import workoutsRoutes from './routes/workouts';
+import leaderboardRoutes from './routes/leaderboard';
 
 dotenv.config();
 
@@ -11,16 +18,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/octofit';
-
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('✅ Conectado a MongoDB en', MONGODB_URI);
-  })
-  .catch((err) => {
-    console.error('❌ Error al conectar a MongoDB:', err);
-  });
+// Connect to MongoDB
+connectDatabase();
 
 // Health Check Route
 app.get('/api/health', (req, res) => {
@@ -31,11 +30,19 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Basic API Route
-app.get('/api/workouts', (req, res) => {
-  res.json({
-    workouts: [],
-    message: 'Endpoint de entrenamientos - Próximamente'
+// API Routes
+app.use('/api/users', usersRoutes);
+app.use('/api/teams', teamsRoutes);
+app.use('/api/activities', activitiesRoutes);
+app.use('/api/workouts', workoutsRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
+
+// Error handling middleware
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('Error:', err);
+  res.status(500).json({
+    success: false,
+    error: 'Internal server error'
   });
 });
 
@@ -45,5 +52,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor OctoFit Tracker corriendo en puerto ${PORT}`);
   console.log(`📱 Frontend en: http://localhost:5173`);
   console.log(`🔌 Backend en: http://localhost:${PORT}`);
-  console.log(`🗄️  MongoDB en: ${MONGODB_URI}`);
+  console.log(`🗄️  MongoDB en: ${process.env.MONGODB_URI || 'mongodb://localhost:27017/octofit_db'}`);
 });
